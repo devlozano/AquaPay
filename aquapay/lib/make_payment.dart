@@ -14,13 +14,45 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
   String selectedMethod = "gcash";
   final TextEditingController _amountController = TextEditingController();
 
+  // Data structure for payment instructions
+  final Map<String, Map<String, String>> paymentDetails = {
+    'gcash': {
+      'accountName': 'Juan Dela Cruz',
+      'accountNumber': '0912 345 6789',
+      'instruction':
+          'Send payment via Express Send. Please save a screenshot of the receipt.',
+    },
+    'maya': {
+      'accountName': 'Juan Dela Cruz',
+      'accountNumber': '0912 345 6789',
+      'instruction':
+          'Transfer via PayMaya. Keep your transaction reference number.',
+    },
+    'bank_transfer': {
+      'accountName': 'Water Management Inc.',
+      'accountNumber': '1234-5678-90',
+      'bank': 'BDO Unibank',
+      'instruction': 'Use your Account ID as the bank transfer description.',
+    },
+    'credit_card': {
+      'accountName': 'Online Payment Portal',
+      'accountNumber': '**** **** **** 4242',
+      'instruction': 'Secure payment processed via Stripe.',
+    },
+    'cash': {
+      'accountName': 'Barangay Office / Payment Center',
+      'accountNumber': 'N/A',
+      'instruction': 'Visit the nearest authorized payment center or office.',
+    },
+  };
+
   final List<Map<String, dynamic>> recommendedMethods = [
     {'id': 'credit_card', 'label': 'Credit Card', 'icon': Icons.credit_card},
+    {'id': 'gcash', 'label': 'GCash', 'icon': Icons.phone_android},
+    {'id': 'maya', 'label': 'Maya', 'icon': Icons.account_balance_wallet},
   ];
 
   final List<Map<String, dynamic>> otherMethods = [
-    {'id': 'gcash', 'label': 'GCash', 'icon': Icons.phone_android},
-    {'id': 'maya', 'label': 'Maya', 'icon': Icons.account_balance_wallet},
     {'id': 'bank_transfer', 'label': 'Bank Transfer', 'icon': Icons.business},
     {'id': 'cash', 'label': 'Cash', 'icon': Icons.payments},
   ];
@@ -40,7 +72,6 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
     });
   }
 
-  // UPDATED: Handle payment and navigate with arguments
   void _handlePayment() async {
     double amount = double.tryParse(_amountController.text) ?? 0.0;
 
@@ -49,7 +80,6 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
       return;
     }
 
-    // 1. Prepare transaction data for the receipt
     final Map<String, dynamic> transactionData = {
       'id':
           'TXN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
@@ -61,21 +91,17 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
       'accountNumber': 'WTR-2026-8391',
       'meterNumber': 'MTR-8391-2026',
       'billingPeriod': 'April 2026',
-      'consumption': '12.5', // Mock data
-      'ratePerKwh': '10.50',
-      'previousReading': '1040',
-      'currentReading': '1052.5',
+      'consumption': '12.5',
+      'ratePerUnit': '5.00',
+      'previousReading': '500',
+      'currentReading': (500 + 12.5).toString(),
     };
 
-    // 2. Clear balance in local storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_balance', '0.00');
 
-    // 3. Navigate to Receipt Screen
     if (!mounted) return;
-
     _showSnackBar("Payment of ₱${amount.toStringAsFixed(2)} successful!");
-
     Navigator.pushReplacementNamed(
       context,
       '/receipt',
@@ -125,47 +151,85 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
             _buildAmountInput(),
             const SizedBox(height: 24),
             const Text(
-              "Recommended",
+              "Select Payment Method",
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             _buildRecommendedGrid(),
-            const SizedBox(height: 24),
-            const Text(
-              "Other Options",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
             const SizedBox(height: 12),
             ...otherMethods.map((m) => _buildMethodTile(m)).toList(),
+            const SizedBox(height: 24),
+            _buildDetailedInstructionCard(), // The new details section
             const SizedBox(height: 32),
-
-            // Pay Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _handlePayment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 4,
-                ),
-                child: Text(
-                  // REWRITTEN: Reactive text based on controller
-                  "Pay ₱${_amountController.text.isEmpty ? '0.00' : _amountController.text}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            _buildPayButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailedInstructionCard() {
+    final details = paymentDetails[selectedMethod]!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 18,
+                color: Color(0xFF0EA5E9),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "Payment Details: ${selectedMethod.toUpperCase()}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0EA5E9),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          if (details.containsKey('bank')) ...[
+            _detailRow("Bank Name", details['bank']!),
+            const SizedBox(height: 8),
+          ],
+          _detailRow("Account Name", details['accountName']!),
+          const SizedBox(height: 8),
+          _detailRow("Account Number", details['accountNumber']!),
+          const SizedBox(height: 12),
+          Text(
+            details['instruction']!,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+      ],
     );
   }
 
@@ -202,30 +266,6 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 16,
-                  color: Colors.amber,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Late payments may incur a ₱50 surcharge.",
-                    style: TextStyle(fontSize: 11, color: Colors.brown),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -328,6 +368,31 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPayButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _handlePayment,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF0EA5E9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 4,
+        ),
+        child: Text(
+          "Pay ₱${_amountController.text.isEmpty ? '0.00' : _amountController.text}",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
