@@ -14,16 +14,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String accountNumber = "---- ---- --";
   String dueDate = "--/--/--";
 
+  // Synced with Profile Data
+  final List<Map<String, String>> recentPayments = [
+    {
+      'date': 'May 12, 2026',
+      'amount': '-₱1,250.00',
+      'status': 'Success',
+      'label': 'Water Bill - May',
+    },
+    {
+      'date': 'Apr 10, 2026',
+      'amount': '-₱980.50',
+      'status': 'Success',
+      'label': 'Water Bill - Apr',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
-  // Logic to grab data from storage
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-
     setState(() {
       fullName = prefs.getString('user_name') ?? "Guest User";
       balance = prefs.getString('user_balance') ?? "₱0.00";
@@ -32,13 +46,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Fixed Navigation Logic
   void _navigateToMakePayment() {
-    // Make sure '/make_payment' is defined in your main.dart routes
-    Navigator.pushNamed(context, '/make_payment').then((_) {
-      // This refreshes the dashboard data when you return from making a payment
-      _loadData();
-    });
+    Navigator.pushNamed(context, '/make_payment').then((_) => _loadData());
   }
 
   @override
@@ -116,35 +125,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
 
+            // FIXED: 4-Grid Action Buttons
             _FadeInUp(
               delay: 2,
-              child: Row(
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.6,
                 children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: "Pay Bill",
-                      icon: Icons.credit_card,
-                      color: Colors.blue,
-                      textColor: Colors.white,
-                      onTap:
-                          _navigateToMakePayment, // Updated to use the new navigation method
-                    ),
+                  _ActionButton(
+                    label: "Pay Bill",
+                    icon: Icons.receipt_long_rounded,
+                    color: Colors.blue,
+                    textColor: Colors.white,
+                    onTap: _navigateToMakePayment,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionButton(
-                      label: "Submit Reading",
-                      icon: Icons.speed,
-                      color: Colors.white,
-                      textColor: Colors.blue,
-                      isOutline: true,
-                      onTap: () => Navigator.pushNamed(context, '/submit'),
-                    ),
+                  _ActionButton(
+                    label: "Submit Reading",
+                    icon: Icons.speed,
+                    color: Colors.white,
+                    textColor: Colors.blue,
+                    isOutline: true,
+                    onTap: () => Navigator.pushNamed(context, '/submit'),
+                  ),
+                  _ActionButton(
+                    label: "Usage",
+                    icon: Icons.bar_chart_rounded,
+                    color: Colors.white,
+                    textColor: Colors.teal,
+                    isOutline: true,
+                    onTap: () => Navigator.pushNamed(context, '/usage'),
+                  ),
+                  _ActionButton(
+                    label: "Support",
+                    icon: Icons.headset_mic_rounded,
+                    color: Colors.white,
+                    textColor: Colors.orange,
+                    isOutline: true,
+                    onTap: () => Navigator.pushNamed(context, '/support'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             _FadeInUp(
               delay: 3,
@@ -154,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Recent Transactions Section
+            // Synced Recent Transactions
             _FadeInUp(
               delay: 4,
               child: Column(
@@ -170,7 +196,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/profile'),
                         child: const Text("View All"),
                       ),
                     ],
@@ -183,16 +210,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: Column(
                       children: [
-                        _TransactionItem(
-                          title: "Water Bill - Sept",
-                          date: "Sep 12, 2023",
-                          amount: "-₱1,100.00",
-                        ),
-                        const Divider(height: 1),
-                        _TransactionItem(
-                          title: "Water Bill - Aug",
-                          date: "Aug 10, 2023",
-                          amount: "-₱1,250.00",
+                        ...recentPayments.map(
+                          (payment) => Column(
+                            children: [
+                              _TransactionItem(
+                                title: payment['label']!,
+                                date: payment['date']!,
+                                amount: payment['amount']!,
+                              ),
+                              if (payment != recentPayments.last)
+                                const Divider(
+                                  height: 1,
+                                  indent: 15,
+                                  endIndent: 15,
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -207,7 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// --- HELPER COMPONENTS ---
+// --- UPDATED HELPER COMPONENTS ---
 
 class _ActionButton extends StatelessWidget {
   final String label;
@@ -228,28 +261,39 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Added Material for InkWell splash effect
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          height: 56,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: isOutline
-                ? Border.all(color: Colors.blue.withOpacity(0.2), width: 2)
+                ? Border.all(color: textColor.withOpacity(0.2), width: 1.5)
+                : null,
+            boxShadow: !isOutline
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
                 : null,
           ),
-          child: Row(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: textColor, size: 18),
-              const SizedBox(width: 8),
+              Icon(icon, color: textColor, size: 24),
+              const SizedBox(height: 8),
               Text(
                 label,
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -339,6 +383,7 @@ class _SubscriptionBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -353,7 +398,7 @@ class _SubscriptionBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 "Save now with AquaPay Premium",
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
               ),
             ),
             Icon(Icons.chevron_right, color: Colors.grey),
@@ -374,6 +419,7 @@ class _TransactionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       title: Text(
         title,
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -381,7 +427,10 @@ class _TransactionItem extends StatelessWidget {
       subtitle: Text(date, style: const TextStyle(fontSize: 12)),
       trailing: Text(
         amount,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.redAccent,
+        ),
       ),
     );
   }

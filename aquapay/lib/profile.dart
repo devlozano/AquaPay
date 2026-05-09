@@ -9,7 +9,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // 1. Data state variables
   String fullName = "Loading...";
   String email = "Loading...";
   String accountNumber = "----";
@@ -17,13 +16,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String contactNumber = "----";
   String address = "----";
 
+  // Mock Payment Data
+  final List<Map<String, String>> paymentHistory = [
+    {'date': 'May 12, 2026', 'amount': '₱1,250.00', 'status': 'Success'},
+    {'date': 'Apr 10, 2026', 'amount': '₱980.50', 'status': 'Success'},
+    {'date': 'Mar 15, 2026', 'amount': '₱1,100.00', 'status': 'Success'},
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadProfileData();
   }
 
-  // 2. Fetch from SharedPreferences
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -38,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clears all saved data
+    await prefs.clear();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/auth');
   }
@@ -60,108 +65,187 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           children: [
-            // --- Avatar & Header Section ---
             const SizedBox(height: 20),
-            Center(
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0EA5E9), Color(0xFF14B8A6)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withOpacity(0.2),
-                          blurRadius: 15,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        fullName.isNotEmpty ? fullName[0].toUpperCase() : "U",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    fullName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(email, style: const TextStyle(color: Colors.grey)),
-                ],
-              ),
-            ),
-
+            _buildAvatarSection(),
             const SizedBox(height: 32),
 
             // --- Profile Info Card ---
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade200),
+            _buildSectionCard([
+              _buildProfileField(
+                Icons.numbers,
+                "Account Number",
+                accountNumber,
               ),
-              child: Column(
-                children: [
-                  _buildProfileField(
-                    Icons.numbers,
-                    "Account Number",
-                    accountNumber,
-                  ),
-                  _buildProfileField(Icons.speed, "Meter Number", meterNumber),
-                  _buildProfileField(
-                    Icons.phone_android,
-                    "Contact Number",
-                    contactNumber,
-                  ),
-                  _buildProfileField(
-                    Icons.location_on_outlined,
-                    "Address",
-                    address,
-                    isLast: true,
-                  ),
-                ],
+              _buildProfileField(Icons.speed, "Meter Number", meterNumber),
+              _buildProfileField(
+                Icons.phone_android,
+                "Contact Number",
+                contactNumber,
               ),
-            ),
+              _buildProfileField(
+                Icons.location_on_outlined,
+                "Address",
+                address,
+                isLast: true,
+              ),
+            ]),
+
+            const SizedBox(height: 16),
+
+            // --- Payment History Dropdown ---
+            _buildPaymentHistoryDropdown(),
 
             const SizedBox(height: 24),
 
             // --- Logout Button ---
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _handleLogout,
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text("Logout"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: BorderSide(color: Colors.red.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+            _buildLogoutButton(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  // Helper Widget for the rows
+  Widget _buildAvatarSection() {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0EA5E9), Color(0xFF14B8A6)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 15),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                fullName.isNotEmpty ? fullName[0].toUpperCase() : "U",
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            fullName,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          Text(email, style: const TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildPaymentHistoryDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.history,
+              color: Color(0xFF0EA5E9),
+              size: 20,
+            ),
+          ),
+          title: const Text(
+            "Payment History",
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          children: [
+            const Divider(height: 1),
+            ...paymentHistory.map(
+              (payment) => ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
+                title: Text(
+                  payment['amount']!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: Text(
+                  payment['date']!,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    payment['status']!,
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _handleLogout,
+        icon: const Icon(Icons.logout, size: 18),
+        label: const Text("Logout"),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.red,
+          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileField(
     IconData icon,
     String label,

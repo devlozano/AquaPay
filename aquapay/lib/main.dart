@@ -7,6 +7,9 @@ import 'package:aquapay/splash_screen.dart'; // Ensure this path matches your fi
 import 'package:aquapay/dashboard.dart'; // Ensure this path matches your file structure
 import 'package:aquapay/submit.dart'; // Ensure this path matches your file structure
 import 'package:aquapay/receipt.dart'; // Ensure this path matches your file structure
+import 'package:aquapay/plan.dart'; // Ensure this path matches your file structure
+import 'package:aquapay/usage.dart'; // Ensure this path matches your file structure
+import 'package:aquapay/support.dart'; // Ensure this path matches your file structure
 
 void main() => runApp(const AquaPayApp());
 
@@ -34,6 +37,10 @@ class AquaPayApp extends StatelessWidget {
         '/receipt': (context) => const ReceiptScreen(), // Your Receipt code
         '/subscription': (context) =>
             const SubscriptionScreen(), // Your Subscription code
+        '/plan': (context) => const ChoosePlanScreen(), // Your Plan code
+        '/usage': (context) =>
+            const UsageOverviewScreen(), // Your Usage Overview code
+        '/support': (context) => const SupportScreen(), // Your Support code
       },
     );
   }
