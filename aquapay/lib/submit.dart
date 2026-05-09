@@ -11,8 +11,9 @@ class SubmitReadingScreen extends StatefulWidget {
 class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
   final TextEditingController _readingController = TextEditingController();
 
-  double previousReading = 1040.0;
-  double ratePerUnit = 12.00; // Example rate
+  // Initialized to 500.0 as requested
+  double previousReading = 500.0;
+  double ratePerUnit = 5.00;
   bool _isSubmitting = false;
 
   @override
@@ -23,10 +24,15 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
 
   Future<void> _loadPreviousData() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // OPTIONAL: Uncomment the line below once and run the app if you want
+    // to manually clear a very high reading saved in your phone storage.
+    // await prefs.setString('last_reading', "500.0");
+
     setState(() {
-      previousReading =
-          double.tryParse(prefs.getString('last_reading') ?? "1040.0") ??
-          1040.0;
+      // It will now grab the saved reading, or default to 500.0 if empty
+      String? savedReading = prefs.getString('last_reading');
+      previousReading = double.tryParse(savedReading ?? "500.0") ?? 500.0;
     });
   }
 
@@ -38,7 +44,7 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
       _showSnackBar(
         currentReading == null
             ? "Enter a valid reading"
-            : "Reading lower than previous",
+            : "Reading must be higher than $previousReading",
         isError: true,
       );
       return;
@@ -46,16 +52,14 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Calculate consumption
     double consumption = currentReading - previousReading;
     double totalAmount = consumption * ratePerUnit;
 
-    // Save to local storage so Dashboard/Payment screens update
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_balance', totalAmount.toStringAsFixed(2));
+    await prefs.setString('user_balance', "₱${totalAmount.toStringAsFixed(2)}");
     await prefs.setString('last_reading', currentReading.toStringAsFixed(1));
 
-    await Future.delayed(const Duration(seconds: 1)); // Simulation
+    await Future.delayed(const Duration(seconds: 1));
 
     if (!mounted) return;
     _showSnackBar("Reading submitted: ₱${totalAmount.toStringAsFixed(2)}");
@@ -111,7 +115,6 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
             ),
             const SizedBox(height: 12),
 
-            // --- PHOTO UPLOAD BUTTONS ---
             Row(
               children: [
                 Expanded(child: _buildUploadButton(Icons.camera_alt, "Camera")),
@@ -149,7 +152,7 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               Text(
-                "$previousReading units",
+                "${previousReading.toStringAsFixed(1)} units",
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -178,7 +181,6 @@ class _SubmitReadingScreenState extends State<SubmitReadingScreen> {
     );
   }
 
-  // UI Helper for the Camera/Gallery buttons
   Widget _buildUploadButton(IconData icon, String label) {
     return InkWell(
       onTap: () => _showSnackBar("Photo upload coming soon!", isError: false),
