@@ -14,7 +14,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String accountNumber = "---- ---- --";
   String dueDate = "--/--/--";
 
-  // Synced with Profile Data
   final List<Map<String, String>> recentPayments = [
     {
       'date': 'May 12, 2026',
@@ -36,18 +35,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadData();
   }
 
+  // REWRITTEN: Loads fresh data from local storage
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
+    String storedBalance = prefs.getString('user_balance') ?? "0.00";
+
     setState(() {
       fullName = prefs.getString('user_name') ?? "Guest User";
-      balance = prefs.getString('user_balance') ?? "₱0.00";
-      accountNumber = prefs.getString('user_account') ?? "No Account";
-      dueDate = prefs.getString('user_due_date') ?? "N/A";
+      // Formats the balance to include the Peso sign if not already present
+      balance = storedBalance.contains('₱') ? storedBalance : "₱$storedBalance";
+      accountNumber = prefs.getString('user_account') ?? "WTR-2026-8391";
+      dueDate = prefs.getString('user_due_date') ?? "May 25, 2026";
     });
   }
 
   void _navigateToMakePayment() {
     Navigator.pushNamed(context, '/make_payment').then((_) => _loadData());
+  }
+
+  // UPDATED: Navigation for Submit Reading to trigger a refresh on return
+  void _navigateToSubmitReading() {
+    Navigator.pushNamed(context, '/submit').then((_) => _loadData());
   }
 
   @override
@@ -125,7 +133,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // FIXED: 4-Grid Action Buttons
             _FadeInUp(
               delay: 2,
               child: GridView.count(
@@ -149,7 +156,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.white,
                     textColor: Colors.blue,
                     isOutline: true,
-                    onTap: () => Navigator.pushNamed(context, '/submit'),
+                    onTap: _navigateToSubmitReading, // Updated call
                   ),
                   _ActionButton(
                     label: "Usage",
@@ -180,7 +187,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Synced Recent Transactions
             _FadeInUp(
               delay: 4,
               child: Column(
@@ -240,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// --- UPDATED HELPER COMPONENTS ---
+// --- HELPER COMPONENTS REMAIN THE SAME ---
 
 class _ActionButton extends StatelessWidget {
   final String label;
