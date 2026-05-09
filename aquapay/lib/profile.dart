@@ -41,11 +41,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // REWRITTEN: Logic to handle logout with confirmation
   void _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/auth');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to log out of AquaPay?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear(); // Clears all session data
+
+              if (!mounted) return;
+              // Remove all previous routes and start fresh at auth
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            },
+            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -60,6 +85,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -68,8 +97,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _buildAvatarSection(),
             const SizedBox(height: 32),
-
-            // --- Profile Info Card ---
             _buildSectionCard([
               _buildProfileField(
                 Icons.numbers,
@@ -89,15 +116,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 isLast: true,
               ),
             ]),
-
             const SizedBox(height: 16),
-
-            // --- Payment History Dropdown ---
             _buildPaymentHistoryDropdown(),
-
             const SizedBox(height: 24),
-
-            // --- Logout Button ---
             _buildLogoutButton(),
             const SizedBox(height: 20),
           ],
