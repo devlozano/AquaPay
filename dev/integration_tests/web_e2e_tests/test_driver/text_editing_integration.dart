@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:js_util' as js_util;
+import 'package:js/js_util.dart';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -247,12 +247,17 @@ web.KeyboardEvent dispatchKeyboardEvent(
   String type,
   Map<String, dynamic> args,
 ) {
-  final Object jsKeyboardEvent = js_util.getProperty(web.window, 'KeyboardEvent') as Object;
+  final Object jsKeyboardEvent = getProperty(web.window, 'KeyboardEvent') as Object;
   final List<dynamic> eventArgs = <dynamic>[type, args];
   final web.KeyboardEvent event =
-      js_util.callConstructor(jsKeyboardEvent, js_util.jsify(eventArgs) as List<dynamic>)
-          as web.KeyboardEvent;
+      callConstructor(jsKeyboardEvent, jsify(eventArgs) as List<dynamic>) as web.KeyboardEvent;
   target.dispatchEvent(event);
 
   return event;
 }
+
+callConstructor(Object jsKeyboardEvent, List<dynamic> jsify) {}
+
+jsify(List<dynamic> eventArgs) {}
+
+getProperty(web.Window window, String s) {}

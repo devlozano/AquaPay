@@ -9,7 +9,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // 1. Remove 'final' and provide initial placeholders
   String fullName = "Loading...";
   String balance = "₱0.00";
   String accountNumber = "---- ---- --";
@@ -18,19 +17,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData(); // 2. Trigger the data fetch as soon as the screen loads
+    _loadData();
   }
 
-  // 3. The logic to grab data from storage
+  // Logic to grab data from storage
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
     setState(() {
-      // Use the keys you used in your Auth/Login screen
       fullName = prefs.getString('user_name') ?? "Guest User";
       balance = prefs.getString('user_balance') ?? "₱0.00";
       accountNumber = prefs.getString('user_account') ?? "No Account";
       dueDate = prefs.getString('user_due_date') ?? "N/A";
+    });
+  }
+
+  // Fixed Navigation Logic
+  void _navigateToMakePayment() {
+    // Make sure '/make_payment' is defined in your main.dart routes
+    Navigator.pushNamed(context, '/make_payment').then((_) {
+      // This refreshes the dashboard data when you return from making a payment
+      _loadData();
     });
   }
 
@@ -41,7 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white.withOpacity(0.8),
         elevation: 0,
-        centerTitle: false,
         title: Row(
           children: const [
             Icon(Icons.water_drop, color: Colors.blue, size: 20),
@@ -64,18 +70,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Colors.blue, Colors.teal],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  gradient: LinearGradient(colors: [Colors.blue, Colors.teal]),
                 ),
                 child: const Icon(Icons.person, color: Colors.white, size: 18),
               ),
@@ -88,7 +85,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
             _FadeInUp(
               delay: 0,
               child: Column(
@@ -110,7 +106,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Balance Card
             _FadeInUp(
               delay: 1,
               child: _BalanceCard(
@@ -121,7 +116,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Action Buttons
             _FadeInUp(
               delay: 2,
               child: Row(
@@ -132,7 +126,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.credit_card,
                       color: Colors.blue,
                       textColor: Colors.white,
-                      onTap: () => Navigator.pushNamed(context, '/pay'),
+                      onTap:
+                          _navigateToMakePayment, // Updated to use the new navigation method
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -143,16 +138,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       textColor: Colors.blue,
                       isOutline: true,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/submit-reading'),
+                      onTap: () => Navigator.pushNamed(context, '/submit'),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-            // Subscription Banner
             _FadeInUp(
               delay: 3,
               child: _SubscriptionBanner(
@@ -161,58 +154,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Recent Transactions Header
+            // Recent Transactions Section
             _FadeInUp(
               delay: 4,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    "Recent Transactions",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Recent Transactions",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text("View All"),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "View All",
-                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _TransactionItem(
+                          title: "Water Bill - Sept",
+                          date: "Sep 12, 2023",
+                          amount: "-₱1,100.00",
+                        ),
+                        const Divider(height: 1),
+                        _TransactionItem(
+                          title: "Water Bill - Aug",
+                          date: "Aug 10, 2023",
+                          amount: "-₱1,250.00",
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            // Transaction List
-            _FadeInUp(
-              delay: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  children: [
-                    _TransactionItem(
-                      title: "Water Bill - Sept",
-                      date: "Sep 12, 2023",
-                      amount: "-₱1,100.00",
-                    ),
-                    Divider(height: 1, color: Colors.grey.shade100),
-                    _TransactionItem(
-                      title: "Water Bill - Aug",
-                      date: "Aug 10, 2023",
-                      amount: "-₱1,250.00",
-                    ),
-                    Divider(height: 1, color: Colors.grey.shade100),
-                    _TransactionItem(
-                      title: "Payment Refund",
-                      date: "Aug 05, 2023",
-                      amount: "+₱150.00",
-                      isPositive: true,
-                    ),
-                  ],
-                ),
               ),
             ),
           ],
@@ -222,7 +207,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// --- Helper Components (Stateless as they represent static UI elements) ---
+// --- HELPER COMPONENTS ---
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color, textColor;
+  final bool isOutline;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.textColor,
+    this.isOutline = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      // Added Material for InkWell splash effect
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(16),
+            border: isOutline
+                ? Border.all(color: Colors.blue.withOpacity(0.2), width: 2)
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: textColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _BalanceCard extends StatelessWidget {
   final String balance, accountNumber, dueDate;
@@ -240,24 +275,15 @@ class _BalanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [Color(0xFF0EA5E9), Color(0xFF14B8A6)],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             "Current Balance",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 4),
           Text(
@@ -285,7 +311,6 @@ class _BalanceCard extends StatelessWidget {
 class _InfoTile extends StatelessWidget {
   final String label, value;
   const _InfoTile({required this.label, required this.value});
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -299,8 +324,7 @@ class _InfoTile extends StatelessWidget {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -308,71 +332,12 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color, textColor;
-  final bool isOutline;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.textColor,
-    this.isOutline = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          border: isOutline
-              ? Border.all(color: Colors.blue.withOpacity(0.2), width: 2)
-              : null,
-          boxShadow: !isOutline
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: textColor, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SubscriptionBanner extends StatelessWidget {
   final VoidCallback onTap;
   const _SubscriptionBanner({required this.onTap});
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -382,38 +347,16 @@ class _SubscriptionBanner extends StatelessWidget {
           border: Border.all(color: const Color(0xFFFEF3C7)),
         ),
         child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.amber, Colors.orange],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.workspace_premium,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
+          children: const [
+            Icon(Icons.workspace_premium, color: Colors.amber),
+            SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Subscription",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  Text(
-                    "Save now with AquaPay Premium",
-                    style: TextStyle(color: Colors.grey, fontSize: 11),
-                  ),
-                ],
+              child: Text(
+                "Save now with AquaPay Premium",
+                style: TextStyle(fontSize: 12),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+            Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
       ),
@@ -423,52 +366,31 @@ class _SubscriptionBanner extends StatelessWidget {
 
 class _TransactionItem extends StatelessWidget {
   final String title, date, amount;
-  final bool isPositive;
   const _TransactionItem({
     required this.title,
     required this.date,
     required this.amount,
-    this.isPositive = false,
   });
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        backgroundColor: Colors.blue.withOpacity(0.1),
-        child: Icon(
-          isPositive ? Icons.add : Icons.receipt_long,
-          color: Colors.blue,
-          size: 20,
-        ),
-      ),
       title: Text(
         title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
-      subtitle: Text(
-        date,
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
-      ),
+      subtitle: Text(date, style: const TextStyle(fontSize: 12)),
       trailing: Text(
         amount,
-        style: TextStyle(
-          color: isPositive ? Colors.green : Colors.black,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );
   }
 }
 
-// Animation Wrapper
 class _FadeInUp extends StatefulWidget {
   final Widget child;
   final int delay;
   const _FadeInUp({required this.child, required this.delay});
-
   @override
   State<_FadeInUp> createState() => _FadeInUpState();
 }
@@ -494,10 +416,10 @@ class _FadeInUpState extends State<_FadeInUp>
       begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(Duration(milliseconds: widget.delay * 100), () {
-      if (mounted) _controller.forward();
-    });
+    Future.delayed(
+      Duration(milliseconds: widget.delay * 100),
+      () => _controller.forward(),
+    );
   }
 
   @override

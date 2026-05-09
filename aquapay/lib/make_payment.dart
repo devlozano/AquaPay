@@ -9,7 +9,6 @@ class MakePaymentScreen extends StatefulWidget {
 }
 
 class _MakePaymentScreenState extends State<MakePaymentScreen> {
-  // 1. State Variables
   String balance = "0.00";
   String dueDate = "Not Set";
   String selectedMethod = "gcash";
@@ -37,12 +36,12 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
     setState(() {
       balance = prefs.getString('user_balance') ?? "1250.00";
       dueDate = prefs.getString('user_due_date') ?? "Oct 25, 2023";
-      // Remove symbols to set the initial numeric value in the input
       _amountController.text = balance.replaceAll(RegExp(r'[^0-9.]'), '');
     });
   }
 
-  void _handlePayment() {
+  // UPDATED: Handle payment and navigate with arguments
+  void _handlePayment() async {
     double amount = double.tryParse(_amountController.text) ?? 0.0;
 
     if (amount <= 0) {
@@ -50,9 +49,38 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
       return;
     }
 
-    // Logic for generating receipt (In a real app, send to API here)
+    // 1. Prepare transaction data for the receipt
+    final Map<String, dynamic> transactionData = {
+      'id':
+          'TXN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      'amount': amount.toStringAsFixed(2),
+      'status': 'Paid',
+      'date': 'May 09, 2026',
+      'dateTime': 'May 09, 2026 • 07:01 AM',
+      'method': selectedMethod.toUpperCase(),
+      'accountNumber': 'WTR-2026-8391',
+      'meterNumber': 'MTR-8391-2026',
+      'billingPeriod': 'April 2026',
+      'consumption': '12.5', // Mock data
+      'ratePerKwh': '10.50',
+      'previousReading': '1040',
+      'currentReading': '1052.5',
+    };
+
+    // 2. Clear balance in local storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_balance', '0.00');
+
+    // 3. Navigate to Receipt Screen
+    if (!mounted) return;
+
     _showSnackBar("Payment of ₱${amount.toStringAsFixed(2)} successful!");
-    Navigator.pushReplacementNamed(context, '/receipt');
+
+    Navigator.pushReplacementNamed(
+      context,
+      '/receipt',
+      arguments: transactionData,
+    );
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -72,22 +100,23 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
       appBar: AppBar(
         title: const Text(
           "Make Payment",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Balance Card ---
             _buildBalanceCard(),
             const SizedBox(height: 24),
-
-            // --- Amount Input ---
             const Text(
               "Amount to Pay",
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -95,8 +124,6 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
             const SizedBox(height: 8),
             _buildAmountInput(),
             const SizedBox(height: 24),
-
-            // --- Recommended Methods ---
             const Text(
               "Recommended",
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -104,18 +131,15 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
             const SizedBox(height: 12),
             _buildRecommendedGrid(),
             const SizedBox(height: 24),
-
-            // --- Other Options ---
             const Text(
               "Other Options",
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             ...otherMethods.map((m) => _buildMethodTile(m)).toList(),
-
             const SizedBox(height: 32),
 
-            // --- Pay Button ---
+            // Pay Button
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -129,7 +153,8 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
                   elevation: 4,
                 ),
                 child: Text(
-                  "Pay ₱${_amountController.text}",
+                  // REWRITTEN: Reactive text based on controller
+                  "Pay ₱${_amountController.text.isEmpty ? '0.00' : _amountController.text}",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
